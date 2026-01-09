@@ -1,6 +1,8 @@
 #include "analyzer.h"
+#include <iostream>
+#include <algorithm>
 
-// Students may use ANY data structure internally
+using namespace std;
 
 void TripAnalyzer::ingestStdin() {
     ios::sync_with_stdio(false);
