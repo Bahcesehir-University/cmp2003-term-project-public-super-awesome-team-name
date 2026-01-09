@@ -3,7 +3,6 @@
 #include <algorithm>
 #include <vector>
 #include <string>
-#include <iostream>
 
 static int safeParseHour(const std::string& dateStr) {
     if (dateStr.length() < 13) return -1;
@@ -11,16 +10,25 @@ static int safeParseHour(const std::string& dateStr) {
     size_t spacePos = dateStr.find(' ');
     if (spacePos == std::string::npos) return -1;
 
-    if (spacePos + 3 > dateStr.size()) return -1;
+    size_t hourStart = spacePos + 1;
+    size_t colonPos = dateStr.find(':', hourStart);
+    
+    if (colonPos == std::string::npos) return -1;
 
-    char c1 = dateStr[spacePos + 1];
-    char c2 = dateStr[spacePos + 2];
+    std::string hourStr = dateStr.substr(hourStart, colonPos - hourStart);
+    
+    if (hourStr.empty() || hourStr.length() > 2) return -1;
 
-    if (c1 < '0' || c1 > '9' || c2 < '0' || c2 > '9') return -1;
+    for (char c : hourStr) {
+        if (!isdigit(c)) return -1;
+    }
 
-    int h = (c1 - '0') * 10 + (c2 - '0');
-    if (h >= 0 && h <= 23) return h;
-
+    try {
+        int h = std::stoi(hourStr);
+        if (h >= 0 && h <= 23) return h;
+    } catch (...) {
+        return -1;
+    }
     return -1;
 }
 
@@ -29,6 +37,8 @@ void TripAnalyzer::ingestFile(const std::string& csvPath) {
     if (!file.is_open()) return;
 
     std::string line;
+    if (!std::getline(file, line)) return;
+
     while (std::getline(file, line)) {
         if (line.empty()) continue;
 
