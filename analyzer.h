@@ -1,6 +1,12 @@
-#pragma once
+#ifndef ANALYZER_H
+#define ANALYZER_H
+
 #include <string>
 #include <vector>
+#include <unordered_map>
+#include <array>
+
+using namespace std;
 
 struct ZoneCount {
     string zone;
@@ -23,3 +29,5 @@ private:
     unordered_map<string, long long> zoneCounts;
     unordered_map<string, array<long long, 24>> slotCounts;
 };
+
+#endif
