@@ -6,15 +6,13 @@
 #include <unordered_map>
 #include <array>
 
-using namespace std;
-
 struct ZoneCount {
-    string zone;
+    std::string zone;
     long long count;
 };
 
 struct SlotCount {
-    string zone;
+    std::string zone;
     int hour;
     long long count;
 };
@@ -22,12 +20,12 @@ struct SlotCount {
 class TripAnalyzer {
 public:
     void ingestStdin();
-    vector<ZoneCount> topZones();
-    vector<SlotCount> topBusySlots();
+    std::vector<ZoneCount> topZones();
+    std::vector<SlotCount> topBusySlots();
 
 private:
-    unordered_map<string, long long> zoneCounts;
-    unordered_map<string, array<long long, 24>> slotCounts;
+    std::unordered_map<std::string, long long> zoneCounts;
+    std::unordered_map<std::string, std::array<long long, 24>> slotCounts;
 };
 
 #endif
