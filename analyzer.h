@@ -1,5 +1,4 @@
-#ifndef ANALYZER_H
-#define ANALYZER_H
+#pragma once
 
 #include <string>
 #include <vector>
@@ -19,13 +18,14 @@ struct SlotCount {
 
 class TripAnalyzer {
 public:
-    void ingestStdin();
-    std::vector<ZoneCount> topZones();
-    std::vector<SlotCount> topBusySlots();
+    void ingestFile(const std::string& csvPath);
+
+    std::vector<ZoneCount> topZones(int k = 10) const;
+    std::vector<SlotCount> topBusySlots(int k = 10) const;
 
 private:
     std::unordered_map<std::string, long long> zoneCounts;
     std::unordered_map<std::string, std::array<long long, 24>> slotCounts;
-};
 
-#endif
+    void ingestStream(std::istream& in);
+};
