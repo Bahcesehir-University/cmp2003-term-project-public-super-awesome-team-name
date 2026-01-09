@@ -1,14 +1,32 @@
 #include "analyzer.h"
-
 #include <fstream>
-#include <iostream>
 #include <algorithm>
+#include <string>
+#include <cctype>
+
+static int safeParseHour(const std::string& dateStr) {
+    if (dateStr.length() < 13) return -1;
+
+    size_t spacePos = dateStr.find(' ');
+    if (spacePos == std::string::npos) return -1;
+
+    size_t hourStart = spacePos + 1;
+    if (hourStart + 1 >= dateStr.size()) return -1;
+
+    char c1 = dateStr[hourStart];
+    char c2 = dateStr[hourStart + 1];
+
+    if (!isdigit(c1) || !isdigit(c2)) return -1;
+
+    int h = (c1 - '0') * 10 + (c2 - '0');
+    if (h < 0 || h > 23) return -1;
+
+    return h;
+}
 
 void TripAnalyzer::ingestStream(std::istream& in) {
-    std::ios::sync_with_stdio(false);
-    in.tie(nullptr);
-
     std::string line;
+
     while (std::getline(in, line)) {
         if (line.empty()) continue;
 
@@ -27,20 +45,14 @@ void TripAnalyzer::ingestStream(std::istream& in) {
             p3 == std::string::npos || p4 == std::string::npos)
             continue;
 
-        std::string zone = line.substr(p1 + 1, p2 - p1 - 1);
-        std::string pickupTime = line.substr(p3 + 1, p4 - p3 - 1);
+        std::string zoneID = line.substr(p1 + 1, p2 - p1 - 1);
+        std::string dateStr = line.substr(p3 + 1, p4 - p3 - 1);
 
-        if (pickupTime.size() < 13) continue;
+        int hour = safeParseHour(dateStr);
+        if (hour == -1) continue;
 
-        char c1 = pickupTime[11];
-        char c2 = pickupTime[12];
-        if (c1 < '0' || c1 > '9' || c2 < '0' || c2 > '9') continue;
-
-        int hour = (c1 - '0') * 10 + (c2 - '0');
-        if (hour < 0 || hour > 23) continue;
-
-        zoneCounts[zone]++;
-        slotCounts[zone][hour]++;
+        zone_counts[zoneID]++;
+        zone_hourly_counts[zoneID][hour]++;
     }
 }
 
@@ -51,40 +63,43 @@ void TripAnalyzer::ingestFile(const std::string& csvPath) {
 }
 
 std::vector<ZoneCount> TripAnalyzer::topZones(int k) const {
-    std::vector<ZoneCount> res;
-    res.reserve(zoneCounts.size());
+    std::vector<ZoneCount> results;
+    results.reserve(zone_counts.size());
 
-    for (auto& kv : zoneCounts)
-        res.push_back({kv.first, kv.second});
+    for (const auto& kv : zone_counts)
+        results.push_back({kv.first, kv.second});
 
-    std::sort(res.begin(), res.end(),
+    std::sort(results.begin(), results.end(),
         [](const ZoneCount& a, const ZoneCount& b) {
             if (a.count != b.count) return a.count > b.count;
             return a.zone < b.zone;
         });
 
-    if ((int)res.size() > k) res.resize(k);
-    return res;
+    if ((size_t)k < results.size())
+        results.resize(k);
+
+    return results;
 }
 
 std::vector<SlotCount> TripAnalyzer::topBusySlots(int k) const {
-    std::vector<SlotCount> res;
+    std::vector<SlotCount> results;
 
-    for (auto& z : slotCounts) {
-        for (int h = 0; h < 24; h++) {
-            if (z.second[h] > 0) {
-                res.push_back({z.first, h, z.second[h]});
-            }
+    for (const auto& z : zone_hourly_counts) {
+        for (int h = 0; h < 24; ++h) {
+            if (z.second[h] > 0)
+                results.push_back({z.first, h, z.second[h]});
         }
     }
 
-    std::sort(res.begin(), res.end(),
+    std::sort(results.begin(), results.end(),
         [](const SlotCount& a, const SlotCount& b) {
             if (a.count != b.count) return a.count > b.count;
             if (a.zone != b.zone) return a.zone < b.zone;
             return a.hour < b.hour;
         });
 
-    if ((int)res.size() > k) res.resize(k);
-    return res;
+    if ((size_t)k < results.size())
+        results.resize(k);
+
+    return results;
 }
