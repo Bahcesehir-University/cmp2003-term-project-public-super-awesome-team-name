@@ -1,14 +1,15 @@
 #include "analyzer.h"
 
+#include <fstream>
 #include <iostream>
 #include <algorithm>
 
-void TripAnalyzer::ingestStdin() {
+void TripAnalyzer::ingestStream(std::istream& in) {
     std::ios::sync_with_stdio(false);
-    std::cin.tie(nullptr);
+    in.tie(nullptr);
 
     std::string line;
-    while (std::getline(std::cin, line)) {
+    while (std::getline(in, line)) {
         if (line.empty()) continue;
 
         int commaCount = 0;
@@ -43,36 +44,47 @@ void TripAnalyzer::ingestStdin() {
     }
 }
 
-std::vector<ZoneCount> TripAnalyzer::topZones() {
+void TripAnalyzer::ingestFile(const std::string& csvPath) {
+    std::ifstream file(csvPath);
+    if (!file.is_open()) return;
+    ingestStream(file);
+}
+
+std::vector<ZoneCount> TripAnalyzer::topZones(int k) const {
     std::vector<ZoneCount> res;
-    for (auto &kv : zoneCounts)
+    res.reserve(zoneCounts.size());
+
+    for (auto& kv : zoneCounts)
         res.push_back({kv.first, kv.second});
 
     std::sort(res.begin(), res.end(),
-         [](const ZoneCount &a, const ZoneCount &b) {
-             if (a.count != b.count) return a.count > b.count;
-             return a.zone < b.zone;
-         });
+        [](const ZoneCount& a, const ZoneCount& b) {
+            if (a.count != b.count) return a.count > b.count;
+            return a.zone < b.zone;
+        });
 
-    if (res.size() > 10) res.resize(10);
+    if ((int)res.size() > k) res.resize(k);
     return res;
 }
 
-std::vector<SlotCount> TripAnalyzer::topBusySlots() {
+std::vector<SlotCount> TripAnalyzer::topBusySlots(int k) const {
     std::vector<SlotCount> res;
 
-    for (auto &z : slotCounts)
-        for (int h = 0; h < 24; h++)
-            if (z.second[h] > 0)
+    for (auto& z : slotCounts) {
+        for (int h = 0; h < 24; h++) {
+            if (z.second[h] > 0) {
                 res.push_back({z.first, h, z.second[h]});
+            }
+        }
+    }
 
     std::sort(res.begin(), res.end(),
-         [](const SlotCount &a, const SlotCount &b) {
-             if (a.count != b.count) return a.count > b.count;
-             if (a.zone != b.zone) return a.zone < b.zone;
-             return a.hour < b.hour;
-         });
+        [](const SlotCount& a, const SlotCount& b) {
+            if (a.count != b.count) return a.count > b.count;
+            if (a.zone != b.zone) return a.zone < b.zone;
+            return a.hour < b.hour;
+        });
 
-    if (res.size() > 10) res.resize(10);
+    if ((int)res.size() > k) res.resize(k);
     return res;
 }
