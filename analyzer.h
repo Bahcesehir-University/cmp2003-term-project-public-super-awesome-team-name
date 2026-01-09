@@ -1,9 +1,9 @@
 #pragma once
-
 #include <string>
 #include <vector>
 #include <unordered_map>
 #include <array>
+#include <istream>
 
 struct ZoneCount {
     std::string zone;
@@ -17,15 +17,15 @@ struct SlotCount {
 };
 
 class TripAnalyzer {
+private:
+    std::unordered_map<std::string, long long> zone_counts;
+    std::unordered_map<std::string, std::array<long long, 24>> zone_hourly_counts;
+
+    void ingestStream(std::istream& in);
+
 public:
     void ingestFile(const std::string& csvPath);
 
     std::vector<ZoneCount> topZones(int k = 10) const;
     std::vector<SlotCount> topBusySlots(int k = 10) const;
-
-private:
-    std::unordered_map<std::string, long long> zoneCounts;
-    std::unordered_map<std::string, std::array<long long, 24>> slotCounts;
-
-    void ingestStream(std::istream& in);
 };
